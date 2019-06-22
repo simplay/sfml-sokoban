@@ -1,6 +1,11 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
+bool isInsideGrid(sf::Sprite& player) {
+  auto pos = player.getPosition();
+  return pos.x >= 0 && pos.x < 768 && pos.y > 32 && pos.y < 768;
+}
+
 void updatePlayerSprite(sf::Sprite& sprite, unsigned rowIdx, unsigned colIdx) {
   int offset = 64;
   int startX = colIdx * offset;
@@ -10,13 +15,11 @@ void updatePlayerSprite(sf::Sprite& sprite, unsigned rowIdx, unsigned colIdx) {
 }
 
 int main() {
-  sf::RenderWindow window(sf::VideoMode(200, 200), "Sokoban-Clone");
+  sf::RenderWindow window(sf::VideoMode(800, 800), "Sokoban-Clone");
   auto speed = 10.0f;
 
   window.setFramerateLimit(60);
   sf::Clock clock;  // starts the clock
-
-  float fps = 0;
 
   sf::Texture texture;
   if (!texture.loadFromFile("assets/sprites.png")) {
@@ -28,6 +31,9 @@ int main() {
 
   updatePlayerSprite(player, 4, 0);
   player.move(500, 600);
+  sf::Vector2f currentPlayerPosition(500, 500);
+  sf::Vector2f currentPlayerDirection(0, 0);
+
   window.draw(player);
   unsigned counter = 0;
 
@@ -40,20 +46,20 @@ int main() {
           break;
         case sf::Event::KeyPressed:
           if (event.key.code == sf::Keyboard::A) {
-            player.move(-speed, 0);
             updatePlayerSprite(player, 6, 3 + counter);
+            currentPlayerDirection = sf::Vector2f(-1, 0);
           }
           if (event.key.code == sf::Keyboard::D) {
-            player.move(speed, 0);
             updatePlayerSprite(player, 6, 0 + counter);
+            currentPlayerDirection = sf::Vector2f(1, 0);
           }
           if (event.key.code == sf::Keyboard::W) {
-            player.move(0, -speed);
             updatePlayerSprite(player, 4, 3 + counter);
+            currentPlayerDirection = sf::Vector2f(0, -1);
           }
           if (event.key.code == sf::Keyboard::S) {
-            player.move(0, speed);
             updatePlayerSprite(player, 4, 0 + counter);
+            currentPlayerDirection = sf::Vector2f(0, 1);
           }
 
           counter = (counter + 1) % 3;
@@ -64,16 +70,19 @@ int main() {
     }
 
     sf::Time timeElapsed = clock.getElapsedTime();
-    fps = 1.f / timeElapsed.asSeconds();
+    float fps = 1.f / timeElapsed.asSeconds();
     std::cout << "FPS: " << fps << std::endl;
     clock.restart();
 
-    auto position = player.getPosition();
-    std::cout << (int)position.x << ", " << (int)position.y << std::endl;
+    std::cout << (int)currentPlayerPosition.x << ", " << (int)currentPlayerPosition.y << std::endl;
 
     window.clear();
     window.draw(player);
     window.display();
+
+    currentPlayerPosition += speed * currentPlayerDirection;
+    currentPlayerDirection = sf::Vector2f(0, 0);
+    player.setPosition(currentPlayerPosition.x, currentPlayerPosition.y);
   }
 
   return 0;
