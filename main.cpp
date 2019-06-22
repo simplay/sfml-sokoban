@@ -1,13 +1,12 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-bool isInsideGrid(sf::Sprite& player) {
-  auto pos = player.getPosition();
-  return pos.x >= 0 && pos.x < 768 && pos.y > 32 && pos.y < 768;
+bool isInsideGrid(sf::Vector2f&& nextPosition, float width, float height) {
+  return (nextPosition.x > 0 && nextPosition.x < width && nextPosition.y > 0 &&
+          nextPosition.y < height);
 }
 
-void updatePlayerSprite(sf::Sprite& sprite, unsigned rowIdx, unsigned colIdx) {
-  int offset = 64;
+void updatePlayerSprite(sf::Sprite& sprite, unsigned rowIdx, unsigned colIdx, unsigned offset) {
   int startX = colIdx * offset;
   int startY = rowIdx * offset;
 
@@ -15,7 +14,10 @@ void updatePlayerSprite(sf::Sprite& sprite, unsigned rowIdx, unsigned colIdx) {
 }
 
 int main() {
-  sf::RenderWindow window(sf::VideoMode(800, 800), "Sokoban-Clone");
+  unsigned length = 800;
+  unsigned offset = 64;
+  sf::RenderWindow window(sf::VideoMode(length, length), "Sokoban-Clone");
+  float gridLength = length - offset;
   auto speed = 10.0f;
 
   window.setFramerateLimit(60);
@@ -29,7 +31,7 @@ int main() {
   sf::Sprite player;
   player.setTexture(texture);
 
-  updatePlayerSprite(player, 4, 0);
+  updatePlayerSprite(player, 4, 0, offset);
   player.move(500, 600);
   sf::Vector2f currentPlayerPosition(500, 500);
   sf::Vector2f currentPlayerDirection(0, 0);
@@ -46,19 +48,19 @@ int main() {
           break;
         case sf::Event::KeyPressed:
           if (event.key.code == sf::Keyboard::A) {
-            updatePlayerSprite(player, 6, 3 + counter);
+            updatePlayerSprite(player, 6, 3 + counter, offset);
             currentPlayerDirection = sf::Vector2f(-1, 0);
           }
           if (event.key.code == sf::Keyboard::D) {
-            updatePlayerSprite(player, 6, 0 + counter);
+            updatePlayerSprite(player, 6, 0 + counter, offset);
             currentPlayerDirection = sf::Vector2f(1, 0);
           }
           if (event.key.code == sf::Keyboard::W) {
-            updatePlayerSprite(player, 4, 3 + counter);
+            updatePlayerSprite(player, 4, 3 + counter, offset);
             currentPlayerDirection = sf::Vector2f(0, -1);
           }
           if (event.key.code == sf::Keyboard::S) {
-            updatePlayerSprite(player, 4, 0 + counter);
+            updatePlayerSprite(player, 4, 0 + counter, offset);
             currentPlayerDirection = sf::Vector2f(0, 1);
           }
 
@@ -74,15 +76,21 @@ int main() {
     std::cout << "FPS: " << fps << std::endl;
     clock.restart();
 
-    std::cout << (int)currentPlayerPosition.x << ", " << (int)currentPlayerPosition.y << std::endl;
-
     window.clear();
     window.draw(player);
     window.display();
 
-    currentPlayerPosition += speed * currentPlayerDirection;
+    auto displacement = speed * currentPlayerDirection;
+    if (isInsideGrid(currentPlayerPosition + displacement, gridLength, gridLength)) {
+      currentPlayerPosition += displacement;
+      player.setPosition(currentPlayerPosition.x, currentPlayerPosition.y);
+    }
+
+    std::cout << "location: " << (int)currentPlayerPosition.x << ", "
+              << (int)currentPlayerPosition.y << std::endl;
+
+    // reset player direction
     currentPlayerDirection = sf::Vector2f(0, 0);
-    player.setPosition(currentPlayerPosition.x, currentPlayerPosition.y);
   }
 
   return 0;
